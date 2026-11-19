@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#4f7cff">
+<title>ШкоМессенджер</title>
+<style>
+:root{
+  --accent:#4f7cff; --bg:#f2f4f8; --card:#ffffff; --text:#1c2333; --muted:#7a8299;
+  --border:#e3e7f0; --mymsg:#4f7cff; --mytext:#fff;
+}
+body.dark{
+  --bg:#12151c; --card:#1d2230; --text:#eef1f8; --muted:#8b93a8;
+  --border:#2a3245; --mymsg:#3b62d9;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text)}
+input,textarea,select,button{font-family:inherit;font-size:16px}
+button{cursor:pointer;border:none;outline:none}
+.screen{display:none;flex-direction:column;min-height:100vh}
+.screen.active{display:flex}
+
+/* ===== ВХОД ===== */
+#loginScreen{align-items:center;justify-content:center;padding:24px}
+.login-card{background:var(--card);border-radius:24px;padding:32px 24px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.08);text-align:center}
+.logo{font-size:56px;margin-bottom:8px}
+.login-card h1{font-size:24px;margin-bottom:4px}
+.login-card p{color:var(--muted);font-size:14px;margin-bottom:24px}
+.avatar-pick{width:96px;height:96px;border-radius:50%;background:var(--bg);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;border:2px dashed var(--border)}
+.avatar-pick img{width:100%;height:100%;object-fit:cover}
+.avatar-pick span{font-size:32px}
+.avatar-hint{font-size:12px;color:var(--muted);margin-bottom:20px}
+.field{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:14px;background:var(--bg);color:var(--text);margin-bottom:12px;transition:border .2s}
+.field:focus{border-color:var(--accent);outline:none}
+.btn{width:100%;padding:15px;border-radius:14px;background:var(--accent);color:#fff;font-weight:600;font-size:16px;margin-top:8px}
+.btn:active{opacity:.8}
+.err{color:#e0455a;font-size:13px;min-height:18px;margin-top:8px}
+.change-acc{margin-top:16px;color:var(--muted);font-size:13px;text-decoration:underline;background:none}
+
+/* ===== ШАПКА ===== */
+header{background:var(--card);padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 0 var(--border);position:sticky;top:0;z-index:10}
+header .h-title{font-size:19px;font-weight:700;flex:1}
+.icon-btn{background:var(--bg);width:40px;height:40px;border-radius:12px;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hdr-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)}
+.hdr-avatar.ph{display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:20px}
+
+/* ===== СПИСОК ЧАТОВ ===== */
+#chatsScreen{padding-bottom:80px}
+.search{padding:12px 16px}
+.search input{width:100%;padding:12px 16px;border-radius:14px;border:1.5px solid var(--border);background:var(--card);color:var(--text)}
+.chat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);cursor:pointer}
+.chat-item:active{background:var(--bg)}
+.chat-ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ci-info{flex:1;min-width:0}
+.ci-name{font-weight:600;font-size:16px}
+.ci-sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fab{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;font-size:26px;box-shadow:0 6px 20px rgba(79,124,255,.4);z-index:9}
+
+/* ===== ЧАТ ===== */
+#chatScreen .messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:78%;padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.4;word-wrap:break-word}
+.msg.me{align-self:flex-end;background:var(--mymsg);color:var(--mytext);border-bottom-right-radius:6px}
+.msg.them{align-self:flex-start;background:var(--card);border-bottom-left-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.msg .m-sender{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.msg .m-time{font-size:11px;opacity:.6;margin-top:4px;text-align:right}
+.typing{align-self:flex-start;color:var(--muted);font-size:13px;padding:4px 12px;font-style:italic}
+.chat-input-bar{display:flex;gap:8px;padding:10px 12px;background:var(--card);border-top:1px solid var(--border);position:sticky;bottom:0}
+.chat-input-bar input{flex:1;padding:12px 16px;border-radius:22px;border:1.5px solid var(--border);background:var(--bg);color:var(--text)}
+.send-btn{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;font-size:19px;flex-shrink:0}
+
+/* ===== ПРОФИЛЬ / НАСТРОЙКИ ===== */
+#profileScreen{padding:20px 16px 40px}
+.p-card{background:var(--card);border-radius:20px;padding:24px;text-align:center;margin-bottom:16px}
+.p-avatar{width:110px;height:110px;border-radius:50%;margin:0 auto 12px;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:44px;cursor:pointer;position:relative;border:3px solid var(--accent)}
+.p-avatar img{width:100%;height:100%;object-fit:cover}
+.p-name{font-size:20px;font-weight:700}
+.p-phone{color:var(--muted);font-size:14px}
+.p-class{display:inline-block;background:var(--bg);padding:4px 14px;border-radius:12px;font-size:13px;margin-top:8px;color:var(--accent);font-weight:600}
+.edit-field{display:flex;gap:8px;margin-top:16px}
+.edit-field input{flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--text)}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-radius:16px;margin-bottom:10px;font-size:15px}
+.switch{width:50px;height:28px;border-radius:14px;background:var(--border);position:relative;transition:.2s}
+.switch.on{background:var(--accent)}
+.switch::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+.switch.on::after{left:25px}
+.danger-btn{width:100%;padding:14px;border-radius:14px;background:none;border:1.5px solid #e0455a;color:#e0455a;font-weight:600;margin-top:8px}
+
+/* ===== ТОСТ ===== */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1c2333;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;transition:.3s;opacity:0;z-index:99;max-width:90%}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<!-- ЭКРАН ВХОДА -->
+<div class="screen active" id="loginScreen">
+  <div class="login-card">
+    <div class="logo">💬</div>
+    <h1>ШкоМессенджер</h1>
+    <p>Вход по номеру телефона</p>
+    <label class="avatar-pick" id="regAvatarPick">
+      <span>📷</span>
+      <input type="file" id="regAvatarInput" accept="image/*">
+    </label>
+    <div class="avatar-hint">Нажмите, чтобы поставить своё фото</div>
+    <input class="field" id="regPhone" type="tel" inputmode="tel" placeholder="+7 (___) ___-__-__" maxlength="18">
+    <input class="field" id="regName" type="text" placeholder="Ваше имя" maxlength="20">
+    <input class="field" id="regClass" type="text" placeholder="Ваш класс (например, 7 «Б»)" maxlength="10">
+    <button class="btn" id="regBtn">Войти</button>
+    <div class="err" id="regErr"></div>
+    <button class="change-acc" id="changeAccBtn" style="display:none">Войти с другого номера</button>
+  </div>
+</div>
+
+<!-- ЭКРАН ЧАТОВ -->
+<div class="screen" id="chatsScreen">
+  <header>
+    <div class="hdr-avatar ph" id="hdrAvatar" onclick="openProfile()">🙂</div>
+    <div class="h-title">Чаты</div>
+    <button class="icon-btn" id="themeBtn">🌙</button>
+  </header>
+  <div class="search"><input id="chatSearch" placeholder="🔍 Поиск чатов"></div>
+  <div id="chatList"></div>
+  <button class="fab" onclick="newChat()">＋</button>
+</div>
+
+<!-- ЭКРАН ЧАТА -->
+<div class="screen" id="chatScreen">
+  <header>
+    <button class="icon-btn" onclick="backToChats()">←</button>
+    <div style="flex:1">
+      <div class="h-title" id="chatTitle" style="font-size:17px"></div>
+      <div style="font-size:12px;color:var(--muted)" id="chatSub"></div>
+    </div>
+    <button class="icon-btn" onclick="clearChat()">🗑</button>
+  </header>
+  <div class="messages" id="messages"></div>
+  <div class="chat-input-bar">
+    <input id="msgInput" placeholder="Сообщение…">
+    <button class="send-btn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<!-- ЭКРАН ПРОФИЛЯ -->
+<div class="screen" id="profileScreen">
+  <header>
+    <button class="icon-btn" onclick="backToChats()">←</button>
+    <div class="h-title" style="font-size:17px">Профиль</div>
+  </header>
+  <div class="p-card">
+    <div class="p-avatar" id="pAvatar" onclick="document.getElementById('profAvatarInput').click()">🙂</div>
+    <input type="file" id="profAvatarInput" accept="image/*">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Нажмите на фото, чтобы заменить</div>
+    <div class="p-name" id="pName"></div>
+    <div class="p-phone" id="pPhone"></div>
+    <div class="p-class" id="pClass"></div>
+    <div class="edit-field">
+      <input id="editName" placeholder="Имя" maxlength="20">
+      <button class="icon-btn" style="width:46px;height:46px" onclick="saveProfile()">💾</button>
+    </div>
+  </div>
+  <div class="settings-item"><span>Тёмная тема</span><div class="switch" id="themeSwitch" onclick="toggleTheme()"></div></div>
+  <div class="settings-item"><span>Мой аккаунт</span><span style="color:var(--muted);font-size:13px" id="accPhone2"></span></div>
+  <button class="danger-btn" onclick="resetAll()">Сбросить всё (выйти и удалить данные)</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============ ДАННЫЕ ============ */
+var ACC_KEY='skm_account', DATA_KEY='skm_data', THEME_KEY='skm_theme';
+var account=null, data=null, currentChat=null;
+
+var DEFAULT_CHATS=[
+ {id:'c1',name:'Общий чат класса',icon:'👥',bg:'#e3edff',desc:'Вся наша классная семья'},
+ {id:'c2',name:'Домашние задания',icon:'📚',bg:'#e3ffe9',desc:'Что задали и когда'},
+ {id:'c3',name:'Учителя',icon:'📎',bg:'#fff3e0',desc:'Объявления от учителей'},
+ {id:'c4',name:'Флудилка',icon:'🔥',bg:'#ffe9f2',desc:'О чём угодно, кроме учёбы'}
+];
+var BOT_REPLIES=[
+ 'Оо, привет! 👋','Ха-ха, точно 😄','А кто дежурит завтра?','Скиньте фото задания пожалуйста',
+ 'Я за!','Не понял( 🤔','Кто идёт в столовую?','+1','У меня тоже так','Это будет на контрольной?',
+ 'Учительница сказала до пятницы','Круто! 🔥','Лол','Ок, договорились 👌'
+];
+var BOT_NAMES=['Маша','Дима','Артём','Соня','Лиза','Кирилл'];
+
+function load(){try{account=JSON.parse(localStorage.getItem(ACC_KEY));data=JSON.parse(localStorage.getItem(DATA_KEY));}catch(e){}}
+function saveData(){localStorage.setItem(DATA_KEY,JSON.stringify(data));}
+function saveAcc(){localStorage.setItem(ACC_KEY,JSON.stringify(account));}
+function toast(t){var el=document.getElementById('toast');el.textContent=t;el.classList.add('show');setTimeout(function(){el.classList.remove('show')},2200);}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function initials(name){return name?name[0].toUpperCase():'?';}
+
+/* ============ АВАТАР ============ */
+function resizeImage(file,cb){
+  var img=new Image(), reader=new FileReader();
+  reader.onload=function(e){img.onload=function(){
+    var c=document.createElement('canvas'),s=Math.min(img.width,img.height);
+    c.width=c.height=160; var x=c.getContext('2d');
+    x.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,160,160);
+    cb(c.toDataURL('image/jpeg',0.85));
+  };img.src=e.target.result;};
+  reader.readAsDataURL(file);
+}
+
+/* ============ ВХОД ============ */
+var regAvatar=null;
+document.getElementById('regAvatarInput').addEventListener('change',function(e){
+  if(e.target.files[0]) resizeImage(e.target.files[0],function(d){
+    regAvatar=d; showAvatar(document.getElementById('regAvatarPick'),d);
+  });
+});
+function showAvatar(container,data){
+  container.innerHTML=data?'<img src="'+data+'">':'<span>📷</span>';
+}
+// маска телефона
+var phoneInput=document.getElementById('regPhone');
+phoneInput.addEventListener('input',function(){
+  var d=this.value.replace(/\D/g,'');
+  if(d[0]=='8')d='7'+d.slice(1);
+  if(d[0]!='7')d='7'+d;
+  d=d.slice(0,11);
+  var r='+7';
+  if(d.length>1)r+=' ('+d.slice(1,4);
+  if(d.length>=5)r+=') '+d.slice(4,7);
+  if(d.length>=8)r+='-'+d.slice(7,9);
+  if(d.length>=10)r+='-'+d.slice(9,11);
+  this.value=r;
+});
+document.getElementById('regBtn').addEventListener('click',function(){
+  var digits=phoneInput.value.replace(/\D/g,'');
+  var name=document.getElementById('regName').value.trim();
+  var cls=document.getElementById('regClass').value.trim();
+  var err=document.getElementById('regErr');
+  if(digits.length!=11){err.textContent='Введите номер полностью (11 цифр)';return;}
+  if(!name){err.textContent='Введите имя';return;}
+  account={phone:'+7 '+digits.slice(1,4)+' '+digits.slice(4,7)+'-'+digits.slice(7,9)+'-'+digits.slice(9,11),name:name,cls:cls||'—',avatar:regAvatar||null};
+  saveAcc();
+  data={chats:JSON.parse(JSON.stringify(DEFAULT_CHATS)),msgs:{},nick:account.name};
+  if(!data.msgs) data.msgs={};
+  DEFAULT_CHATS.forEach(function(c){
+    if(!data.msgs[c.id]) data.msgs[c.id]=[{who:'them',name:'Маша',text:'Привет, '+name+'! Добро пожаловать 👋',t:timeNow()}];
+  });
+  saveData();
+  showApp();
+});
+document.getElementById('changeAccBtn').addEventListener('click',function(){
+  localStorage.removeItem(ACC_KEY);account=null;location.reload();
+});
+
+/* ============ ПОКАЗ ЭКРАНОВ ============ */
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+}
+function showApp(){
+  document.getElementById('changeAccBtn').style.display='block';
+  applyTheme();
+  renderHeader();renderChats();
+  show('chatsScreen');
+}
+
+/* ============ ШАПКА И СПИСОК ============ */
+function renderHeader(){
+  var h=document.getElementById('hdrAvatar');
+  if(account.avatar){h.innerHTML='<img class="hdr-avatar" style="width:40px;height:40px" src="'+account.avatar+'">';}
+  else{h.textContent=initials(account.name);h.className='hdr-avatar ph';}
+}
+function renderChats(){
+  var q=(document.getElementById('chatSearch').value||'').toLowerCase();
+  var list=document.getElementById('chatList');list.innerHTML='';
+  data.chats.filter(function(c){return c.name.toLowerCase().indexOf(q)>=0}).forEach(function(c){
+    var msgs=data.msgs[c.id]||[];
+    var last=msgs.length?msgs[msgs.length-1].text:'Нет сообщений';
+    var div=document.createElement('div');div.className='chat-item';
+    div.innerHTML='<div class="chat-ic" style="background:'+c.bg+'">'+c.icon+'</div>'+
+      '<div class="ci-info"><div class="ci-name">'+esc(c.name)+'</div><div class="ci-sub">'+esc(last)+'</div></div>'+
+      '<div style="color:var(--muted);font-size:12px">'+(msgs.length?msgs.length:'')+'</div>';
+    div.onclick=function(){openChat(c.id)};
+    list.appendChild(div);
+  });
+}
+document.getElementById('chatSearch').addEventListener('input',renderChats);
+function newChat(){
+  var name=prompt('Название нового чата:');if(!name)return;
+  var icons=['🎮','⚽','🎵','🎨','🍕','🚀','🐱','⭐'];
+  var icon=icons[Math.floor(Math.random()*icons.length)];
+  data.chats.push({id:'c'+Date.now(),name:name,icon:icon,bg:'#eef1f8',desc:'Новый чат'});
+  data.msgs[data.chats[data.chats.length-1].id]=[];
+  saveData();renderChats();toast('Чат создан!');
+}
+
+/* ============ ЧАТ ============ */
+function openChat(id){
+  currentChat=id;
+  var c=data.chats.find(function(x){return x.id==id});
+  document.getElementById('chatTitle').textContent=c.name;
+  document.getElementById('chatSub').textContent=c.desc;
+  renderMsgs();show('chatScreen');
+}
+function backToChats(){renderChats();renderHeader();show('chatsScreen');}
+function timeNow(){
+  var d=new Date();return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+}
+function renderMsgs(){
+  var box=document.getElementById('messages');box.innerHTML='';
+  (data.msgs[currentChat]||[]).forEach(function(m){
+    var div=document.createElement('div');div.className='msg '+(m.who=='me'?'me':'them');
+    var sender=m.who=='me'?'':'<div class="m-sender">'+esc(m.name)+'</div>';
+    div.innerHTML=sender+esc(m.text)+'<div class="m-time">'+m.t+'</div>';
+    box.appendChild(div);
+  });
+  box.scrollTop=box.scrollHeight;
+}
+function sendMsg(){
+  var inp=document.getElementById('msgInput');
+  var t=inp.value.trim();if(!t)return;
+  if(!data.msgs[currentChat])data.msgs[currentChat]=[];
+  data.msgs[currentChat].push({who:'me',text:t,t:timeNow()});
+  inp.value='';saveData();renderMsgs();
+  // «ответ» собеседника
+  var typing=document.createElement('div');typing.className='typing';typing.textContent='печатает…';
+  document.getElementById('messages').appendChild(typing);
+  setTimeout(function(){
+    typing.remove();
+    data.msgs[currentChat].push({who:'them',name:BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)],text:BOT_REPLIES[Math.floor(Math.random()*BOT_REPLIES.length)],t:timeNow()});
+    saveData();if(currentChat)renderMsgs();
+  },1200+Math.random()*1500);
+}
+document.getElementById('msgInput').addEventListener('keydown',function(e){if(e.key=='Enter')sendMsg()});
+function clearChat(){
+  if(!confirm('Очистить переписку в этом чате?'))return;
+  data.msgs[currentChat]=[];saveData();renderMsgs();toast('Чат очищен');
+}
+
+/* ============ ПРОФИЛЬ ============ */
+function openProfile(){
+  document.getElementById('pName').textContent=account.name;
+  document.getElementById('pPhone').textContent=account.phone;
+  document.getElementById('pClass').textContent=account.cls;
+  document.getElementById('accPhone2').textContent=account.phone;
+  document.getElementById('editName').value=account.name;
+  var pa=document.getElementById('pAvatar');
+  if(account.avatar){pa.innerHTML='<img src="'+account.avatar+'">';}
+  else{pa.textContent=initials(account.name);}
+  var sw=document.getElementById('themeSwitch');
+  sw.classList.toggle('on',document.body.classList.contains('dark'));
+  show('profileScreen');
+}
+document.getElementById('profAvatarInput').addEventListener('change',function(e){
+  if(e.target.files[0])resizeImage(e.target.files[0],function(d){
+    account.avatar=d;saveAcc();renderHeader();openProfile();toast('Аватар обновлён! ✨');
+  });
+});
+function saveProfile(){
+  var n=document.getElementById('editName').value.trim();
+  if(!n){toast('Имя не может быть пустым');return;}
+  account.name=n;saveAcc();
+  document.getElementById('pName').textContent=n;renderHeader();
+  toast('Сохранено!');
+}
+
+/* ============ ТЕМА ============ */
+function toggleTheme(){
+  document.body.classList.toggle('dark');
+  localStorage.setItem(THEME_KEY,document.body.classList.contains('dark')?'dark':'light');
+  applyTheme();document.getElementById('themeSwitch').classList.toggle('on',document.body.classList.contains('dark'));
+}
+function applyTheme(){
+  var dark=localStorage.getItem(THEME_KEY)=='dark';
+  document.body.classList.toggle('dark',dark);
+  document.getElementById('themeBtn').textContent=dark?'☀️':'🌙';
+}
+document.getElementById('themeBtn').addEventListener('click',function(){
+  toggleTheme();var sw=document.getElementById('themeSwitch');sw.classList.toggle('on',document.body.classList.contains('dark'));
+});
+
+/* ============ СБРОС ============ */
+function resetAll(){
+  if(!confirm('Удалить аккаунт и все переписки? Это нельзя отменить.'))return;
+  localStorage.removeItem(ACC_KEY);localStorage.removeItem(DATA_KEY);location.reload();
+}
+
+/* ============ СТАРТ ============ */
+load();
+if(account&&data){document.getElementById('regPhone').value=account.phone;document.getElementById('regName').value=account.name;document.getElementById('regClass').value=account.cls;document.getElementById('changeAccBtn').style.display='block';showApp();}
+</script>
+</body>
+</html>
